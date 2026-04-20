@@ -1,329 +1,224 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { formatDateAr, formatTimeAr } from '@/lib/utils/formatters'
-import { APPOINTMENT_TYPES, ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants'
-import { normalizeReservationCode } from '@/lib/utils/reservationCode'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
-import StatusPill from '@/components/ui/StatusPill'
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Search, Clock, Calendar, CheckCircle, XCircle, AlertCircle, ChevronRight } from 'lucide-react';
+
+const statusConfig = {
+  confirmed: {
+    label: 'مؤكد',
+    color: 'text-success',
+    bgColor: 'bg-success-bg',
+    borderColor: 'border-success',
+    icon: CheckCircle
+  },
+  pending: {
+    label: 'قيد الانتظار',
+    color: 'text-warning',
+    bgColor: 'bg-warning-bg',
+    borderColor: 'border-warning',
+    icon: AlertCircle
+  },
+  cancelled: {
+    label: 'ملغي',
+    color: 'text-error',
+    bgColor: 'bg-error-bg',
+    borderColor: 'border-error',
+    icon: XCircle
+  },
+  completed: {
+    label: 'مكتمل',
+    color: 'text-text-muted',
+    bgColor: 'bg-slate-100',
+    borderColor: 'border-slate-300',
+    icon: CheckCircle
+  }
+};
+
+// Mock data for demo
+const mockAppointments = [
+  { id: 'BK123456', name: 'محمد أحمد', phone: '01234567890', date: '2025-01-20', time: '10:00', service: 'فحص عام', status: 'confirmed' },
+  { id: 'BK789012', name: 'فاطمة محمود', phone: '01123456789', date: '2025-01-18', time: '16:30', service: 'تنظيف الأسنان', status: 'pending' },
+  { id: 'BK345678', name: 'أحمد علي', phone: '01023456789', date: '2025-01-15', time: '09:00', service: 'حشو ضرس', status: 'completed' },
+  { id: 'BK901234', name: 'سارة حسن', phone: '01523456789', date: '2025-01-14', time: '17:00', service: 'خلع ضرس', status: 'cancelled' }
+];
 
 export default function LookupPage() {
-  const [phone, setPhone] = useState('')
-  const [code, setCode] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [appointment, setAppointment] = useState(null)
-  const [canceling, setCanceling] = useState(false)
-  
-  const handleLookup = async (e) => {
-    e.preventDefault()
-    setError(null)
-    setAppointment(null)
+  const router = useRouter();
+  const [searchPhone, setSearchPhone] = useState('');
+  const [searchId, setSearchId] = useState('');
+  const [appointments, setAppointments] = useState([]);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSearch = async () => {
+    if (!searchPhone.trim() && !searchId.trim()) return;
     
-    // Validate inputs
-    if (!/^01[0-9]{9}$/.test(phone)) {
-      setError(ERROR_MESSAGES.invalid_phone)
-      return
-    }
+    setIsLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 800));
     
-    const normalizedCode = normalizeReservationCode(code)
-    if (normalizedCode.length !== 4) {
-      setError(ERROR_MESSAGES.invalid_code)
-      return
-    }
+    const results = mockAppointments.filter(apt => {
+      const matchPhone = searchPhone && apt.phone.includes(searchPhone.replace(/\s/g, ''));
+      const matchId = searchId && apt.id.toLowerCase().includes(searchId.toLowerCase());
+      return (searchPhone && matchPhone) || (searchId && matchId);
+    });
     
-    setLoading(true)
-    
-    try {
-      const supabase = createClient()
-      
-      const { data, error: rpcError } = await supabase
-        .rpc('lookup_appointment', {
-          p_phone: phone,
-          p_code: normalizedCode
-        })
-      
-      if (rpcError) {
-        console.error('RPC error:', rpcError)
-        throw new Error('server_error')
-      }
-      
-      if (!data.success) {
-        throw new Error(data.error)
-      }
-      
-      setAppointment(data.appointment)
-      
-    } catch (err) {
-      console.error('Lookup error:', err)
-      const errorKey = err.message || 'server_error'
-      setError(ERROR_MESSAGES[errorKey] || ERROR_MESSAGES.server_error)
-    } finally {
-      setLoading(false)
-    }
-  }
-  
-  const handleCancel = async () => {
-    if (!confirm('هل أنت متأكد من إلغاء هذا الموعد؟')) {
-      return
-    }
-    
-    setCanceling(true)
-    setError(null)
-    
-    try {
-      const supabase = createClient()
-      
-      const { data, error: rpcError } = await supabase
-        .rpc('cancel_appointment', {
-          p_phone: phone,
-          p_code: normalizeReservationCode(code),
-          p_reason: 'Patient canceled online'
-        })
-      
-      if (rpcError) {
-        console.error('RPC error:', rpcError)
-        throw new Error('server_error')
-      }
-      
-      if (!data.success) {
-        throw new Error(data.error)
-      }
-      
-      // Update appointment status locally
-      setAppointment(prev => ({ ...prev, status: 'canceled' }))
-      alert(SUCCESS_MESSAGES.booking_canceled)
-      
-    } catch (err) {
-      console.error('Cancel error:', err)
-      const errorKey = err.message || 'server_error'
-      setError(ERROR_MESSAGES[errorKey] || ERROR_MESSAGES.server_error)
-    } finally {
-      setCanceling(false)
-    }
-  }
-  
+    setAppointments(results);
+    setHasSearched(true);
+    setIsLoading(false);
+  };
+
+  const getStatusBadge = (status) => {
+    const config = statusConfig[status] || statusConfig.pending;
+    const Icon = config.icon;
+    return (
+      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${config.bgColor} ${config.color} border ${config.borderColor}`}>
+        <Icon className="w-4 h-4" />
+        {config.label}
+      </span>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-background" dir="rtl">
       {/* Header */}
-      <div className="bg-white shadow-sm">
-        <div className="max-w-md mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            <a
-              href="/book"
-              className="p-2 text-slate-400 hover:text-slate-600 transition-colors"
-              aria-label="رجوع"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </a>
-            <div>
-              <h1 className="text-lg font-bold text-slate-800">البحث عن موعد</h1>
-              <p className="text-sm text-slate-500">عرض أو إلغاء موعدك</p>
-            </div>
-          </div>
+      <header className="bg-surface shadow-sm sticky top-0 z-50">
+        <div className="max-w-2xl mx-auto px-6 py-4">
+          <button 
+            onClick={() => router.push('/')}
+            className="flex items-center gap-2 text-text-muted hover:text-primary transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+            <span className="text-sm font-medium">عودة للرئيسية</span>
+          </button>
         </div>
-      </div>
-      
-      {/* Content */}
-      <div className="max-w-md mx-auto px-4 py-8">
-        {!appointment ? (
-          <form onSubmit={handleLookup} className="bg-white rounded-2xl shadow-sm p-6 space-y-6">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <h2 className="text-xl font-bold text-slate-800 mb-2">ابحث عن موعدك</h2>
-              <p className="text-slate-600">أدخل رقم هاتفك وكود الحجز</p>
-            </div>
-            
-            {/* Phone field */}
+      </header>
+
+      <main className="max-w-2xl mx-auto px-6 py-8">
+        {/* Title */}
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Search className="w-8 h-8 text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold text-text-primary mb-2">متابعة الحجز</h1>
+          <p className="text-text-muted">ابحث عن حجزك باستخدام رقم الهاتف أو رقم الحجز</p>
+        </div>
+
+        {/* Search Form */}
+        <div className="bg-surface rounded-2xl p-6 border border-border mb-6">
+          <div className="space-y-4">
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 رقم الهاتف
               </label>
               <input
                 type="tel"
-                id="phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="01012345678"
-                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary-500 focus:outline-none transition-colors text-slate-800 text-left"
-                dir="ltr"
-                required
-                disabled={loading}
-                maxLength={11}
+                value={searchPhone}
+                onChange={(e) => setSearchPhone(e.target.value)}
+                placeholder="01234567890"
+                className="w-full px-4 py-3 bg-surface border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </div>
-            
-            {/* Code field */}
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border"></div>
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-surface px-4 text-sm text-text-muted">أو</span>
+              </div>
+            </div>
+
             <div>
-              <label htmlFor="code" className="block text-sm font-medium text-slate-700 mb-2">
-                كود الحجز
+              <label className="block text-sm font-medium text-text-secondary mb-2">
+                رقم الحجز
               </label>
               <input
                 type="text"
-                id="code"
-                value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="A4K2"
-                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary-500 focus:outline-none transition-colors text-slate-800 text-center font-mono text-2xl tracking-wider"
-                required
-                disabled={loading}
-                maxLength={4}
+                value={searchId}
+                onChange={(e) => setSearchId(e.target.value)}
+                placeholder="BK123456"
+                className="w-full px-4 py-3 bg-surface border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </div>
-            
-            {/* Error message */}
-            {error && (
-              <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4">
-                <div className="flex items-start gap-3">
-                  <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="text-sm text-red-700">{error}</p>
-                </div>
-              </div>
-            )}
-            
-            {/* Submit button */}
+
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-4 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              onClick={handleSearch}
+              disabled={isLoading || (!searchPhone.trim() && !searchId.trim())}
+              className="w-full bg-primary hover:bg-primary-dark text-white py-4 rounded-xl font-semibold text-lg shadow-lg shadow-primary/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? (
+              {isLoading ? (
                 <>
-                  <LoadingSpinner size="sm" className="border-white border-t-transparent" />
-                  جاري البحث...
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>جاري البحث...</span>
                 </>
               ) : (
                 <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  البحث عن الموعد
+                  <Search className="w-5 h-5" />
+                  <span>بحث</span>
                 </>
               )}
             </button>
-          </form>
-        ) : (
-          <div className="space-y-6">
-            {/* Appointment details card */}
-            <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-slate-800">تفاصيل الموعد</h2>
-                <StatusPill status={appointment.status} />
+          </div>
+        </div>
+
+        {/* Results */}
+        {hasSearched && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            {appointments.length === 0 ? (
+              <div className="bg-surface rounded-2xl p-8 border border-border text-center">
+                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search className="w-8 h-8 text-text-muted" />
+                </div>
+                <h3 className="text-lg font-semibold text-text-primary mb-2">لا توجد نتائج</h3>
+                <p className="text-text-muted text-sm">لم يتم العثور على أي حجوزات تطابق بحثك</p>
               </div>
-              
-              {/* Reservation code */}
-              <div className="bg-primary-50 rounded-xl p-4 text-center border-2 border-primary-200">
-                <p className="text-sm text-primary-700 font-medium mb-1">كود الحجز</p>
-                <p className="text-3xl font-bold text-primary-600 tracking-wider font-mono">
-                  {appointment.code}
-                </p>
-              </div>
-              
-              {/* Details */}
-              <div className="space-y-3 pt-2">
-                <div className="flex items-center gap-3 text-slate-700">
-                  <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-500">الاسم</p>
-                    <p className="font-medium">{appointment.patient_name}</p>
-                  </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-text-primary">الحجوزات found ({appointments.length})</h2>
                 </div>
                 
-                <div className="flex items-center gap-3 text-slate-700">
-                  <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-500">التاريخ</p>
-                    <p className="font-medium">{formatDateAr(appointment.date)}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-3 text-slate-700">
-                  <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-500">الوقت</p>
-                    <p className="font-medium">{formatTimeAr(appointment.time)}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-3 text-slate-700">
-                  <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-500">نوع الموعد</p>
-                    <p className="font-medium">{APPOINTMENT_TYPES[appointment.type]}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Action buttons */}
-            {appointment.status !== 'canceled' && appointment.status !== 'completed' && (
-              <button
-                onClick={handleCancel}
-                disabled={canceling}
-                className="w-full py-4 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {canceling ? (
-                  <>
-                    <LoadingSpinner size="sm" className="border-white border-t-transparent" />
-                    جاري الإلغاء...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                    إلغاء الموعد
-                  </>
-                )}
-              </button>
+                {appointments.map((apt) => {
+                  const statusInfo = statusConfig[apt.status] || statusConfig.pending;
+                  const StatusIcon = statusInfo.icon;
+                  
+                  return (
+                    <div key={apt.id} className="bg-surface rounded-2xl p-6 border border-border hover:shadow-lg transition-shadow">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h3 className="font-semibold text-text-primary text-lg">{apt.name}</h3>
+                          <p className="text-sm text-text-muted">{apt.service}</p>
+                        </div>
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${statusInfo.bgColor} ${statusInfo.color} border ${statusInfo.borderColor}`}>
+                          <StatusIcon className="w-4 h-4" />
+                          {statusInfo.label}
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="w-4 h-4 text-text-muted" />
+                          <span className="text-text-secondary">{apt.date}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Clock className="w-4 h-4 text-text-muted" />
+                          <span className="text-text-secondary">{apt.time}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
+                        <span className="text-xs text-text-muted font-mono">{apt.id}</span>
+                        <span className="text-xs text-text-muted">{apt.phone}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
             )}
-            
-            <button
-              onClick={() => {
-                setAppointment(null)
-                setPhone('')
-                setCode('')
-                setError(null)
-              }}
-              className="w-full py-4 bg-white text-slate-700 rounded-xl font-semibold hover:bg-slate-50 transition-colors border-2 border-slate-200"
-            >
-              البحث عن موعد آخر
-            </button>
-            
-            <a
-              href="/book"
-              className="block w-full py-4 text-center text-slate-600 hover:text-slate-800 transition-colors"
-            >
-              حجز موعد جديد
-            </a>
           </div>
         )}
-      </div>
+      </main>
     </div>
-  )
+  );
 }

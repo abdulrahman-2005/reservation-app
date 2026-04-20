@@ -1,145 +1,119 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Lock, User, Heart, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const router = useRouter()
-  
-  const handleLogin = async (e) => {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
+  const router = useRouter();
+  const [formData, setFormData] = useState({ username: '', password: '' });
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    // Simulate login
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    try {
-      const supabase = createClient()
-      
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-      
-      if (signInError) throw signInError
-      
-      // Check user role
-      const { data: profile } = await supabase
-        .from('staff_profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .single()
-      
-      // Redirect based on role
-      if (profile?.role === 'doctor') {
-        router.push('/admin')
-      } else {
-        router.push('/dashboard')
-      }
-      
-    } catch (err) {
-      console.error('Login error:', err)
-      setError('البريد الإلكتروني أو كلمة المرور غير صحيحة')
-    } finally {
-      setLoading(false)
+    // Demo credentials check
+    if (formData.username === 'admin' && formData.password === 'admin123') {
+      router.push('/dashboard');
+    } else {
+      setError('اسم المستخدم أو كلمة المرور غير صحيحة');
     }
-  }
-  
+    
+    setIsLoading(false);
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        {/* Logo/Header */}
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-primary/5 flex items-center justify-center p-6" dir="rtl">
+      <div className="w-full max-w-md">
+        {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-cyan-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
+          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/25">
+            <Heart className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">عيادة خطوة</h1>
-          <p className="text-slate-600">تسجيل دخول الموظفين</p>
+          <h1 className="text-2xl font-bold text-text-primary mb-1">عيادة الخطوة</h1>
+          <p className="text-text-muted">تسجيل دخول الموظفين</p>
         </div>
-        
-        {/* Login Form */}
-        <form onSubmit={handleLogin} className="bg-white rounded-xl shadow-sm p-6 space-y-5 border border-slate-200">
-          {/* Email field */}
-          <div>
-            <label htmlFor="email" className="block text-sm font-semibold text-slate-900 mb-2">
-              البريد الإلكتروني
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="staff@khatwah.clinic"
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 focus:outline-none transition-all text-slate-900"
-              required
-              disabled={loading}
-              dir="ltr"
-            />
-          </div>
-          
-          {/* Password field */}
-          <div>
-            <label htmlFor="password" className="block text-sm font-semibold text-slate-900 mb-2">
-              كلمة المرور
-            </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 focus:outline-none transition-all text-slate-900"
-              required
-              disabled={loading}
-              dir="ltr"
-            />
-          </div>
-          
-          {/* Error message */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-red-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
+
+        {/* Login Card */}
+        <div className="bg-surface rounded-2xl shadow-xl shadow-slate-200/50 p-8 border border-border">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">
+                <User className="w-4 h-4 inline-block ml-1" />
+                اسم المستخدم
+              </label>
+              <input
+                type="text"
+                value={formData.username}
+                onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+                placeholder="أدخل اسم المستخدم"
+                className="w-full px-4 py-3 bg-surface border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                autoComplete="username"
+              />
             </div>
-          )}
-          
-          {/* Submit button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 bg-cyan-600 text-white rounded-lg font-semibold hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <LoadingSpinner size="sm" className="border-white border-t-transparent" />
-                جاري تسجيل الدخول...
-              </>
-            ) : (
-              'تسجيل الدخول'
+
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">
+                <Lock className="w-4 h-4 inline-block ml-1" />
+                كلمة المرور
+              </label>
+              <input
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                placeholder="أدخل كلمة المرور"
+                className="w-full px-4 py-3 bg-surface border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                autoComplete="current-password"
+              />
+            </div>
+
+            {error && (
+              <div className="bg-error-bg border border-error/20 rounded-xl p-4 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-error">{error}</p>
+              </div>
             )}
-          </button>
-        </form>
-        
-        {/* Back to booking */}
-        <div className="text-center mt-6">
-          <a
-            href="/book"
-            className="text-cyan-600 hover:text-cyan-700 transition-colors text-sm font-medium"
-          >
-            ← العودة إلى صفحة الحجز
-          </a>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-primary hover:bg-primary-dark text-white py-4 rounded-xl font-semibold text-lg shadow-lg shadow-primary/25 transition-all hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>جاري تسجيل الدخول...</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-5 h-5" />
+                  <span>تسجيل الدخول</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="mt-6 pt-6 border-t border-border">
+            <p className="text-center text-sm text-text-muted">
+              للتجربة استخدم: admin / admin123
+            </p>
+          </div>
         </div>
+
+        {/* Back Link */}
+        <button
+          onClick={() => router.push('/')}
+          className="w-full mt-6 text-center text-text-muted hover:text-primary transition-colors text-sm"
+        >
+          ← العودة للصفحة الرئيسية
+        </button>
       </div>
     </div>
-  )
+  );
 }
