@@ -2,7 +2,31 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, User, Heart, AlertCircle } from 'lucide-react';
+
+// Inline SVG Icons to avoid external dependencies
+const LockIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+  </svg>
+);
+
+const UserIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+  </svg>
+);
+
+const HeartIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+  </svg>
+);
+
+const AlertCircleIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
 
 export default function LoginPage() {
   const router = useRouter();
@@ -34,7 +58,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/25">
-            <Heart className="w-8 h-8 text-white" />
+            <HeartIcon className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-text-primary mb-1">عيادة الخطوة</h1>
           <p className="text-text-muted">تسجيل دخول الموظفين</p>
@@ -45,7 +69,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">
-                <User className="w-4 h-4 inline-block ml-1" />
+                <UserIcon className="w-4 h-4 inline-block ml-1" />
                 اسم المستخدم
               </label>
               <input
@@ -60,7 +84,7 @@ export default function LoginPage() {
 
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">
-                <Lock className="w-4 h-4 inline-block ml-1" />
+                <LockIcon className="w-4 h-4 inline-block ml-1" />
                 كلمة المرور
               </label>
               <input
@@ -75,7 +99,7 @@ export default function LoginPage() {
 
             {error && (
               <div className="bg-error-bg border border-error/20 rounded-xl p-4 flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
+                <AlertCircleIcon className="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-error">{error}</p>
               </div>
             )}
@@ -92,7 +116,7 @@ export default function LoginPage() {
                 </>
               ) : (
                 <>
-                  <Lock className="w-5 h-5" />
+                  <LockIcon className="w-5 h-5" />
                   <span>تسجيل الدخول</span>
                 </>
               )}

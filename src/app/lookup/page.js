@@ -2,36 +2,78 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Clock, Calendar, CheckCircle, XCircle, AlertCircle, ChevronRight } from 'lucide-react';
+
+// Inline SVG Icons
+const SearchIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+  </svg>
+);
+
+const ClockIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const CalendarIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+  </svg>
+);
+
+const CheckCircleIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const XCircleIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const AlertCircleIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const ChevronRightIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+  </svg>
+);
 
 const statusConfig = {
   confirmed: {
     label: 'مؤكد',
-    color: 'text-success',
-    bgColor: 'bg-success-bg',
-    borderColor: 'border-success',
-    icon: CheckCircle
+    color: 'text-green-700',
+    bgColor: 'bg-green-50',
+    borderColor: 'border-green-200',
+    icon: CheckCircleIcon
   },
   pending: {
     label: 'قيد الانتظار',
-    color: 'text-warning',
-    bgColor: 'bg-warning-bg',
-    borderColor: 'border-warning',
-    icon: AlertCircle
+    color: 'text-yellow-700',
+    bgColor: 'bg-yellow-50',
+    borderColor: 'border-yellow-200',
+    icon: AlertCircleIcon
   },
   cancelled: {
     label: 'ملغي',
-    color: 'text-error',
-    bgColor: 'bg-error-bg',
-    borderColor: 'border-error',
-    icon: XCircle
+    color: 'text-red-700',
+    bgColor: 'bg-red-50',
+    borderColor: 'border-red-200',
+    icon: XCircleIcon
   },
   completed: {
     label: 'مكتمل',
-    color: 'text-text-muted',
-    bgColor: 'bg-slate-100',
-    borderColor: 'border-slate-300',
-    icon: CheckCircle
+    color: 'text-gray-600',
+    bgColor: 'bg-gray-100',
+    borderColor: 'border-gray-200',
+    icon: CheckCircleIcon
   }
 };
 
@@ -88,7 +130,7 @@ export default function LookupPage() {
             onClick={() => router.push('/')}
             className="flex items-center gap-2 text-text-muted hover:text-primary transition-colors"
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRightIcon className="w-5 h-5" />
             <span className="text-sm font-medium">عودة للرئيسية</span>
           </button>
         </div>
@@ -98,7 +140,7 @@ export default function LookupPage() {
         {/* Title */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Search className="w-8 h-8 text-primary" />
+            <SearchIcon className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-2xl font-bold text-text-primary mb-2">متابعة الحجز</h1>
           <p className="text-text-muted">ابحث عن حجزك باستخدام رقم الهاتف أو رقم الحجز</p>
@@ -154,7 +196,7 @@ export default function LookupPage() {
                 </>
               ) : (
                 <>
-                  <Search className="w-5 h-5" />
+                  <SearchIcon className="w-5 h-5" />
                   <span>بحث</span>
                 </>
               )}
@@ -168,7 +210,7 @@ export default function LookupPage() {
             {appointments.length === 0 ? (
               <div className="bg-surface rounded-2xl p-8 border border-border text-center">
                 <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Search className="w-8 h-8 text-text-muted" />
+                  <SearchIcon className="w-8 h-8 text-text-muted" />
                 </div>
                 <h3 className="text-lg font-semibold text-text-primary mb-2">لا توجد نتائج</h3>
                 <p className="text-text-muted text-sm">لم يتم العثور على أي حجوزات تطابق بحثك</p>
@@ -198,11 +240,11 @@ export default function LookupPage() {
                       
                       <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
                         <div className="flex items-center gap-2 text-sm">
-                          <Calendar className="w-4 h-4 text-text-muted" />
+                          <CalendarIcon className="w-4 h-4 text-text-muted" />
                           <span className="text-text-secondary">{apt.date}</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
-                          <Clock className="w-4 h-4 text-text-muted" />
+                          <ClockIcon className="w-4 h-4 text-text-muted" />
                           <span className="text-text-secondary">{apt.time}</span>
                         </div>
                       </div>
